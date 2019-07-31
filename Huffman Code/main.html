@@ -1,0 +1,281 @@
+<!--Huffman Tree by Amperia Wang-->
+<html>
+<head>
+    <title>哈夫曼树</title>
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.js"></script>
+    <style>
+        p {
+            line-height: 2.4;
+            font-size: 18px;
+            margin: 5px 0;
+        }
+
+        textarea {
+            font-size: 18px;
+            font-family: "思源黑体 CN Normal", "微软雅黑", "黑体";
+            width: 100%;
+            height: 90px;
+            border: none;
+            border-bottom: 1px solid #6699cc;
+            outline: none;
+            resize: none;
+        }
+
+        .button {
+            display: inline-block;
+            font-size: 18px;
+            line-height: 2.4;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid #6699cc;
+            border-radius: 5px;
+            padding: 0 10px;
+            color: #6699cc;
+            cursor: pointer;
+            margin: 10px;
+            outline: none;
+        }
+
+        table {
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 18px;
+            line-height: 2.4;
+            width: 100%;
+        }
+
+        table th {
+            border-bottom: 2px solid #6699cc;
+        }
+
+        table td {
+            border-left: 0;
+            border-right: 1px solid #cccccc;
+        }
+
+        table tr td:last-child {
+            border-right: 0;
+        }
+
+
+    </style>
+    <script>
+        var alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+        var treeNodes = [];
+        var result = null;
+
+        function BinaryTree(value, frequency, lC = null, rC = null) {
+            this.data = value;
+            this.frequency = parseInt(frequency);
+            this.lChild = lC;
+            this.rChild = rC;
+        }
+
+        BinaryTree.prototype.sing = function () {
+            console.log(this.data);
+        };
+
+        BinaryTree.prototype.preorderTraversal = function () {
+            this.sing();
+            if (this.lChild != null) {
+                this.lChild.preorderTraversal();
+            }
+            if (this.rChild != null) {
+                this.rChild.preorderTraversal();
+            }
+        };
+
+        BinaryTree.prototype.tearDown = function (str = "") {
+            var temp = [];
+            var str2 = "";
+            if (this.data != null) temp.push([this.data, this.frequency, str]);
+            if (this.lChild != null) {
+                str2 = str + '0';
+                temp = temp.concat(this.lChild.tearDown(str2));
+            }
+            if (this.rChild != null) {
+                str2 = str + '1';
+                temp = temp.concat(this.rChild.tearDown(str2));
+            }
+            return temp;
+        };
+
+        function isInArray(value, array) {
+            return array.indexOf(value) >= 0;
+        }
+
+        function mergeAsATree(tree1, tree2) {
+            var fr1 = tree1.frequency;
+            var fr2 = tree2.frequency;
+            return new BinaryTree(null, fr1 + fr2, tree1, tree2);
+        }
+
+        function mergeSort(arr) {
+            var a = [];
+            var b = [];
+            var mid = Math.floor((arr.length) / 2);
+            if (mid > 0) {
+                for (var i = 0; i < mid; i++) {
+                    a.push(arr.pop());
+                }
+                b = arr;
+                a = mergeSort(a);
+                b = mergeSort(b);
+                arr = mergeArray(a, b);
+            }
+            return arr;
+        }
+
+        function mergeArray(a, b) {
+            var temparr = [];
+            var la = a.length;
+            var lb = b.length;
+            var i = 0;
+            var j = 0;
+            while (i < la && j < lb) {
+                temparr.push(a[i].frequency >= b[j].frequency ? a[i++] : b[j++]);
+            }
+            while (i < la) {
+                temparr.push(a[i++]);
+            }
+            while (j < lb) {
+                temparr.push(b[j++]);
+            }
+            return temparr;
+        }
+
+        function bubbleSort(arr) {
+            var len = arr.length;
+            var i = 0;
+            var isDone = true;
+            do {
+                isDone = true;
+                for (i = 1; i < len; i++) {
+                    if (arr[i][1] > arr[i - 1][1]) {
+                        var temp = arr[i];
+                        arr[i] = arr[i - 1];
+                        arr[i - 1] = temp;
+                        isDone = false;
+                    }
+                }
+            } while (!isDone);
+            return arr;
+        }
+
+        function display(arr) {
+            var head = $('#head-template').html();
+            var body = $('#body-template').html();
+            var result = $('#result');
+            var temp = '';
+            var len = arr.length;
+
+            result.html(head);
+            for (var i = 0; i < len; i++) {
+                temp = body;
+                temp = temp.replace('[word]', arr[i][0]);
+                temp = temp.replace('[frequency]', arr[i][1]);
+                temp = temp.replace('[code]', arr[i][2]);
+                result.append(temp);
+            }
+        }
+
+        function displayHuffmanCode() {
+            var words = $('#word').val();
+            words = words.toLowerCase();
+            var wordSplit = words.split('');
+
+            var temp = null;
+            var len1 = wordSplit.length;
+            var len2 = treeNodes.length;
+            var len3 = result == null ? 0 : result.length;
+            var isInArr = 0;
+            var i = 0;
+
+            for (i = 0; i < len1; i++) {
+                if (isInArray(wordSplit[i], alphabet)) {
+                    isInArr = 0;
+                    for (var j = 0; j < len2; j++) {
+                        if (treeNodes[j].data === wordSplit[i]) {
+                            treeNodes[j].frequency++;
+                            isInArr = 1;
+                        }
+                    }
+                    if (isInArr === 0) {
+                        temp = new BinaryTree(wordSplit[i], 1);
+                        treeNodes.push(temp);
+                        len2 = treeNodes.length;
+                    }
+                }
+            }
+
+            for (i = 0; i < len3; i++) {
+                isInArr = 0;
+                for (var j = 0; j < len2; j++) {
+                    if (treeNodes[j].data === result[i][0]) {
+                        treeNodes[j].frequency += result[i][1];
+                        isInArr = 1;
+                    }
+                }
+                if (isInArr === 0) {
+                    temp = new BinaryTree(result[i][0], result[i][1]);
+                    treeNodes.push(temp);
+                    len2 = treeNodes.length;
+                }
+            }
+
+            var tree1 = null;
+            var tree2 = null;
+
+            console.log(treeNodes.length);
+
+            while (len2 > 1) {
+                treeNodes = mergeSort(treeNodes);
+                tree1 = treeNodes.pop();
+                tree2 = treeNodes.pop();
+                treeNodes.push(mergeAsATree(tree1, tree2));
+                len2 = treeNodes.length;
+            }
+
+            if (len2 === 1) {
+                var tempTree = treeNodes.pop();
+                console.log(tempTree);
+                result = tempTree.tearDown();
+                result = bubbleSort(result);
+                console.log(result);
+                display(result);
+            }
+        }
+
+        function clean() {
+            $('#word').val('');
+        }
+    </script>
+</head>
+<body>
+<table id="head-template" style="display: none">
+    <tr>
+        <th>字母</th>
+        <th>频率</th>
+        <th>哈夫曼编码</th>
+    </tr>
+</table>
+<table id="body-template" style="display: none">
+    <tr>
+        <td>[word]</td>
+        <td>[frequency]</td>
+        <td>[code]</td>
+    </tr>
+</table>
+<p>请在下方输入文字（只能统计英文字母）：</p>
+<textarea id="word" rows="3"></textarea>
+<button class="button" onclick="displayHuffmanCode();">开始</button>
+<button class="button" onclick="clean();">清空输入框</button>
+<p>以下是结果：</p>
+<table id="result">
+    <tr>
+        <th>字母</th>
+        <th>频率</th>
+        <th>哈夫曼编码</th>
+    </tr>
+</table>
+</body>
+</html>
