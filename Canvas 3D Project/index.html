@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>主页</title>
+    <script src="./jquery.js"></script>
+    <style>
+        canvas {
+            margin: 0 auto;
+        }
+    </style>
+    <script>
+        var dots = [[1, 0, 0, '#ff0000'], [0, 1, 0, '#00ff00'], [0, 0, 1, '#0000ff']];
+        var thetaM = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], phiM = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+
+        $(document).ready(function () {
+            init();
+
+            $('#theta').bind('input', function () {
+                var theta = $(this).val();
+                thetaM = generateThetaMatrix(theta);
+                transform();
+            });
+
+            $('#phi').bind('input', function () {
+                var phi = $(this).val();
+                phiM = generatePhiMatrix(phi);
+                transform();
+            });
+        });
+
+        function init() {
+            var temp = deepCopy(dots);
+            draw(temp);
+        }
+
+        function transform(changeDots = false) {
+            var arr = deepCopy(dots), temp = [], len = arr.length;
+            for (let i = 0; i < len; i++) {
+                var color = arr[i].pop();
+                var fin = linearTransformation(deepCopy(thetaM), linearTransformation(deepCopy(phiM), arr[i]));
+                fin.push(color);
+                temp.push(fin);
+            }
+            if(changeDots)dots=deepCopy(temp);
+            draw(temp);
+        }
+
+        function move() {
+            var oldX = -1, oldY = -1;
+            $(document).mousemove(function (event) {
+                if (event.buttons === 1) {
+                    oldX = apply('x', oldX, event.pageX);
+                    oldY = apply('y', oldY, event.pageY);
+                }
+                $(document).mouseup(function () {
+                    $(this).unbind('mousemove');
+                })
+            });
+
+            $(document).on('touchmove', function (event) {
+                oldX = apply('x', oldX, event.originalEvent.targetTouches[0].pageX);
+                oldY = apply('y', oldY, event.originalEvent.targetTouches[0].pageY);
+                $(document).on('touchend', function () {
+                    $(document).off('touchmove');
+                });
+            });
+        }
+
+        function apply(XorY, oldOne, newOne) {
+            var span = 10;
+            if (oldOne < 0) return newOne;
+            if (oldOne - newOne > span) {
+                switch (XorY) {
+                    case 'x':
+                        thetaM = generateThetaMatrix(-2);
+                        phiM = generatePhiMatrix(0);
+                        break;
+                    case 'y':
+                        thetaM = generatePhiMatrix(0);
+                        phiM = generatePhiMatrix(2);
+                        break;
+                }
+                transform(true);
+                return newOne;
+            }
+            if (newOne - oldOne > span) {
+                switch (XorY) {
+                    case 'x':
+                        thetaM = generateThetaMatrix(2);
+                        phiM = generatePhiMatrix(0);
+                        break;
+                    case 'y':
+                        thetaM = generatePhiMatrix(0);
+                        phiM = generatePhiMatrix(-2);
+                        break;
+                }
+                transform(true);
+                return newOne;
+            }
+            return oldOne;
+        }
+
+        $('canvas').on('touchstart', function (event) {
+            move();
+        });
+
+        function linearTransformation(matrix, vector) {
+            var mRow = matrix.length, vLen = vector.length, res = [], mCol, i, j, temp;
+            for (i = 0; i < mRow; i++) {
+                mCol = matrix[i].length;
+                if (mCol !== vLen) return null;
+                temp = 0;
+                for (j = 0; j < mCol; j++) {
+                    temp += matrix[i][j] * vector[j];
+                }
+                res.push(temp);
+            }
+            return res;
+        }
+
+        function generateThetaMatrix(theta) {
+            theta = Math.PI * theta / 180;
+            return [[Math.cos(theta), 0 - Math.sin(theta), 0], [Math.sin(theta), Math.cos(theta), 0], [0, 0, 1]];
+        }
+
+        function generatePhiMatrix(phi) {
+            phi = Math.PI * phi / 180;
+            return [[Math.cos(phi), 0, 0 - Math.sin(phi)], [0, 1, 0], [Math.sin(phi), 0, Math.cos(phi)]];
+        }
+
+        function draw(array) {
+            array = mergeSort(array);
+            var len = array.length, i;
+            var canvas = document.getElementById('result');
+            var ox = canvas.width / 2, oy = canvas.height / 2, ax, ay;
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (i = 0; i < len; i++) {
+                ax = ox + (50 * array[i][1]);
+                ay = oy - (50 * array[i][2]);
+                ctx.beginPath();
+                ctx.strokeStyle = array[i][3];
+                ctx.moveTo(ox, oy);
+                ctx.lineTo(ax, ay);
+                ctx.stroke();
+            }
+        }
+
+        function mergeSort(arr) {
+            var a = [];
+            var b = [];
+            var mid = Math.floor((arr.length) / 2);
+            if (mid > 0) {
+                for (var i = 0; i < mid; i++) {
+                    a.push(arr.pop());
+                }
+                b = arr;
+                a = mergeSort(a);
+                b = mergeSort(b);
+                arr = mergeArray(a, b);
+            }
+            return arr;
+        }
+
+        function mergeArray(a, b) {
+            var temparr = [];
+            var la = a.length;
+            var lb = b.length;
+            var i = 0;
+            var j = 0;
+            while (i < la && j < lb) {
+                temparr.push(a[i][0] <= b[j][0] ? a[i++] : b[j++]);
+            }
+            while (i < la) {
+                temparr.push(a[i++]);
+            }
+            while (j < lb) {
+                temparr.push(b[j++]);
+            }
+            return temparr;
+        }
+
+        function deepCopy(o) {
+            var n;
+            if (o instanceof Array) {
+                n = [];
+                for (var i = 0; i < o.length; ++i) {
+                    n[i] = deepCopy(o[i]);
+                }
+                return n;
+            } else if (o instanceof Function) {
+                n = new Function("return " + o.toString())();
+                return n
+            } else if (o instanceof Object) {
+                n = {};
+                for (var i in o) {
+                    n[i] = deepCopy(o[i]);
+                }
+                return n;
+            } else {
+                return o;
+            }
+        }
+    </script>
+</head>
+<body>
+<div style="text-align: center">
+    <canvas id="result" width="800" height="600" onmousedown="move();"></canvas>
+</div>
+<div>
+    <input type="range" id="theta" value="0" min="-180" max="180"/>
+    <input type="range" id="phi" value="0" min="-90" max="90"/>
+</div>
+</body>
+</html>
